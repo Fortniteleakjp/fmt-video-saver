@@ -1,0 +1,9 @@
+{
+  "name": "com.fmtsaver.helper",
+  "description": "FMT Video Saver native helper",
+  "path": "D:\\youtubedl\\native_helper.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://YOUR_EXTENSION_ID/"
+  ]
+}

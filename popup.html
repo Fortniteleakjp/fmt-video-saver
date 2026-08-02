@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FMT Video Saver</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark">↓</div>
+    <div>
+      <h1>FMT Video Saver</h1>
+      <p>ページ内メディアを検出</p>
+    </div>
+    <button id="refresh" class="icon-button" title="再スキャン" aria-label="再スキャン">↻</button>
+  </header>
+
+  <main>
+    <section class="summary">
+      <div>
+        <span class="eyebrow">検出結果</span>
+        <strong id="count">0 件</strong>
+      </div>
+      <button id="clear" class="text-button">クリア</button>
+    </section>
+
+    <div id="notice" class="notice hidden"></div>
+    <section id="download-status" class="download-status hidden" aria-live="polite">
+      <div class="status-head">
+        <span id="progress-stage">保存を開始中</span>
+        <strong id="progress-percent">0%</strong>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </section>
+    <section id="empty" class="empty-state">
+      <div class="empty-icon">◌</div>
+      <h2>動画を探しています</h2>
+      <p>動画を再生してから、もう一度スキャンしてください。</p>
+    </section>
+    <section id="list" class="candidate-list" aria-live="polite"></section>
+  </main>
+
+  <footer>
+    <span>直接ファイル・FMT・HLS/DASH を検出</span>
+    <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noreferrer">ストリーム処理について</a>
+  </footer>
+  <script src="popup.js"></script>
+</body>
+</html>

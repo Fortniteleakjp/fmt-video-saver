@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  --bg: #111417;
+  --panel: #191d22;
+  --panel-hover: #20262d;
+  --line: #2b323b;
+  --text: #f5f7fa;
+  --muted: #98a2ae;
+  --accent: #79e2b0;
+  --accent-dark: #10261e;
+  --warning: #f0c674;
+}
+
+* { box-sizing: border-box; }
+body { width: 390px; min-height: 360px; margin: 0; background: var(--bg); color: var(--text); font: 13px/1.5 "Yu Gothic UI", "Meiryo", sans-serif; }
+button, a { font: inherit; }
+button { border: 0; cursor: pointer; }
+.topbar { display: flex; align-items: center; gap: 11px; padding: 18px 18px 15px; border-bottom: 1px solid var(--line); }
+.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #0e1712; font-size: 24px; font-weight: 800; }
+h1 { margin: 0; font-size: 15px; letter-spacing: .01em; }
+.topbar p { margin: 1px 0 0; color: var(--muted); font-size: 11px; }
+.icon-button { margin-left: auto; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); font-size: 20px; }
+.icon-button:hover { color: var(--text); background: var(--panel-hover); }
+main { padding: 14px 15px 5px; }
+.summary { display: flex; align-items: end; justify-content: space-between; margin: 0 3px 12px; }
+.eyebrow { display: block; color: var(--muted); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; }
+.summary strong { display: block; margin-top: 1px; font-size: 18px; }
+.text-button { padding: 3px 0; background: transparent; color: var(--muted); font-size: 12px; }
+.text-button:hover { color: var(--text); }
+.notice { margin: 0 0 11px; padding: 9px 11px; border: 1px solid #4f4530; border-radius: 8px; background: #28231a; color: var(--warning); font-size: 11px; }
+.download-status { margin: 0 0 12px; padding: 10px 11px; border: 1px solid #315343; border-radius: 9px; background: #14231c; }
+.status-head { display: flex; justify-content: space-between; gap: 12px; color: #b9d8c6; font-size: 11px; }
+.status-head strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+.progress-track { height: 7px; margin-top: 8px; overflow: hidden; border-radius: 999px; background: #29372f; }
+.progress-fill { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #56c994, var(--accent)); transition: width .25s ease; }
+.hidden { display: none !important; }
+.empty-state { padding: 45px 20px 35px; text-align: center; }
+.empty-icon { margin-bottom: 8px; color: var(--accent); font-size: 38px; line-height: 1; }
+.empty-state h2 { margin: 0 0 5px; font-size: 14px; }
+.empty-state p { margin: 0; color: var(--muted); font-size: 12px; }
+.candidate-list { display: grid; gap: 8px; }
+.candidate { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.candidate.youtube { grid-template-columns: 1fr; }
+.candidate:hover { background: var(--panel-hover); }
+.candidate-main { min-width: 0; }
+.candidate-title { overflow: hidden; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-url { overflow: hidden; margin-top: 2px; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.tags { display: flex; gap: 5px; margin-top: 6px; }
+.tag { padding: 1px 6px; border-radius: 999px; background: #263039; color: #b9c6d2; font-size: 10px; }
+.tag.accent { background: var(--accent-dark); color: var(--accent); }
+.save-button { min-width: 58px; padding: 7px 9px; border-radius: 7px; background: var(--accent); color: #0e1712; font-size: 11px; font-weight: 700; }
+.save-button:hover { filter: brightness(1.08); }
+.save-button.secondary { background: #2b333b; color: var(--text); }
+.youtube-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.youtube-action { min-height: 34px; padding: 6px 5px; border: 1px solid #315343; border-radius: 7px; background: #1b3026; color: var(--accent); font-size: 10px; font-weight: 700; }
+.youtube-action:hover { background: #254637; }
+footer { display: flex; justify-content: space-between; gap: 12px; padding: 13px 18px 16px; color: #6f7985; font-size: 10px; }
+footer a { color: #8c99a5; text-decoration: none; }
+footer a:hover { color: var(--accent); }

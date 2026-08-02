@@ -1,0 +1,7 @@
+# PyInstaller / build outputs
+/build/
+/dist/
+*.spec
+
+# Machine-specific Native Messaging registration
+/native-host-manifest.json
