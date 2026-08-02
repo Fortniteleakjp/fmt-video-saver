@@ -97,6 +97,14 @@ function shapeCandidates(rawCandidates) {
   return [youtube];
 }
 
+function preferMasterManifest(rawCandidates) {
+  const manifests = rawCandidates.filter((candidate) => candidate.kind === "manifest");
+  if (manifests.length < 2) return rawCandidates;
+  const master = manifests.find((candidate) => /(?:master|playlist)\.(?:m3u8|mpd)(?:$|[?#])/i.test(candidate.url));
+  if (!master) return rawCandidates;
+  return [master, ...rawCandidates.filter((candidate) => candidate.kind !== "manifest")];
+}
+
 function hostname(value) {
   try { return new URL(value).hostname; } catch { return value; }
 }
@@ -204,7 +212,7 @@ function requestScan() {
   chrome.tabs.sendMessage(activeTabId, { type: "scan" }, () => void chrome.runtime.lastError);
   window.setTimeout(() => {
     chrome.runtime.sendMessage({ type: "getCandidates", tabId: activeTabId }, (response) => {
-      candidates = shapeCandidates(response?.candidates || []);
+      candidates = preferMasterManifest(shapeCandidates(response?.candidates || []));
       render();
     });
   }, 120);

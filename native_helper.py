@@ -136,7 +136,9 @@ def download_stream(request, send_progress):
             if node:
                 args.extend(["--js-runtimes", f"node:{node}"])
         else:
-            args.extend(["--merge-output-format", "mp4"])
+            # 汎用サイトでTLS/HTTP fingerprintを要求する場合にcurl_cffiを利用する
+            args.extend(["--extractor-args", "generic:impersonate", "--impersonate", "chrome"])
+        args.extend(["--retries", "10", "--fragment-retries", "10"])
         if cookie_path:
             args.extend(["--cookies", cookie_path])
         if request.get("referer", "").startswith(("http://", "https://")):

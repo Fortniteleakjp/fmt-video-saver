@@ -5,6 +5,7 @@ const MAX_CANDIDATES = 100;
 const DIRECT_EXTENSIONS = /\.(mp4|webm|mkv|mov|m4v|avi|flv|ogv|3gp|ts|m2ts|mts|mp3|m4a|aac|ogg|wav|flac)(?:$|[?#])/i;
 const MANIFEST_EXTENSIONS = /\.(m3u8|mpd|f4m)(?:$|[?#])/i;
 const FMT_EXTENSION = /\.fmt(?:$|[?#])/i;
+const HLS_SEGMENT_EXTENSIONS = /\.(ts|aac|vtt|cmfv|cmfa)(?:$|[?#])/i;
 
 function isYoutubeMediaUrl(value) {
   try {
@@ -29,6 +30,13 @@ function isYoutubePageUrl(value) {
   }
 }
 
+function isLikelyHlsSegment(raw) {
+  if (!HLS_SEGMENT_EXTENSIONS.test(String(raw.url || ""))) return false;
+  return raw.source === "performance"
+    || raw.resourceType === "xmlhttprequest"
+    || /(?:segment|fragment|chunk|init|part|range)/i.test(String(raw.url || ""));
+}
+
 function safeUrl(value) {
   try {
     const url = new URL(value);
@@ -44,9 +52,10 @@ function detectKind(url, resourceType = "") {
   if (!parsed) return null;
   const lower = parsed.href.toLowerCase();
   const hasFmtParameter = /(?:[?&](?:fmt|format|itag)=)[^&#]+/i.test(parsed.search);
+  const manifestHint = /(?:^|[\/_.-])(manifest|playlist)(?:[\/_.?&#-]|$)/i.test(`${parsed.pathname}${parsed.search}`);
 
   if (FMT_EXTENSION.test(lower)) return "fmt";
-  if (MANIFEST_EXTENSIONS.test(lower) || /(?:manifest|playlist|m3u8|dash)/i.test(lower)) {
+  if (MANIFEST_EXTENSIONS.test(lower) || manifestHint) {
     return "manifest";
   }
   if (DIRECT_EXTENSIONS.test(lower) || resourceType === "media" || /(?:video|audio)/i.test(resourceType)) {
@@ -112,7 +121,10 @@ function toCandidate(raw, tabId, source = "page") {
 function addCandidates(tabId, rawCandidates, source) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
   const current = tabCandidates.get(tabId) || [];
-  const incoming = rawCandidates.map((raw) => toCandidate(raw, tabId, source)).filter(Boolean);
+  const incoming = rawCandidates
+    .filter((raw) => !isLikelyHlsSegment(raw))
+    .map((raw) => toCandidate(raw, tabId, source))
+    .filter(Boolean);
   const merged = [...incoming, ...current];
   const unique = [];
   const seen = new Set();

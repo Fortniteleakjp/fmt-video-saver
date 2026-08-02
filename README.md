@@ -23,7 +23,7 @@ HLS / DASH / F4Mの結合、ログイン中のページからのCookie利用、�
 - Windows 10 / 11
 - Google Chrome または Microsoft Edge
 - Node.js 22以上（YouTubeのチャレンジ解決用）
-- `yt-dlp[default]`
+- `yt-dlp[default,curl-cffi]`
 - `ffmpeg` / `ffprobe`
 
 Python 3.10以上は、リリース済みの `native_helper.exe` を使わず、Nativeヘルパーをソースからビルドする場合に必要です。
@@ -42,10 +42,12 @@ Python 3.10以上は、リリース済みの `native_helper.exe` を使わず、
 `yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe`、Node.jsをPATHに追加してください。
 
 ```powershell
-python -m pip install --upgrade "yt-dlp[default]"
+python -m pip install --upgrade "yt-dlp[default,curl-cffi]"
 ```
 
-`yt-dlp[default]` には、YouTubeのチャレンジ解決に必要なEJSソルバーが含まれます。
+`yt-dlp[default,curl-cffi]` には、YouTubeのEJSソルバーと、一部サイトで必要なブラウザ偽装用の`curl_cffi`が含まれます。
+
+HLSはメディアセグメントではなくプレイリスト（`.m3u8` / `.mpd` / `.f4m`）を選択してください。個別の`.ts`セグメントは候補一覧から除外しています。
 
 ### 3. Native Messagingヘルパーを登録する
 

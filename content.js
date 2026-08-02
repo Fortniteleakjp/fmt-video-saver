@@ -6,7 +6,10 @@
 
   function kindFor(url) {
     if (FMT.test(url)) return "fmt";
-    if (MANIFEST.test(url) || /(?:manifest|playlist|m3u8|dash)/i.test(url)) return "manifest";
+    let parsed;
+    try { parsed = new URL(url); } catch { return null; }
+    const manifestHint = /(?:^|[\/_.-])(manifest|playlist)(?:[\/_.?&#-]|$)/i.test(`${parsed.pathname}${parsed.search}`);
+    if (MANIFEST.test(url) || manifestHint) return "manifest";
     if (DIRECT.test(url)) return /(?:[?&](?:fmt|format|itag)=)/i.test(url) ? "fmt" : "direct";
     if (/(?:[?&](?:fmt|format|itag)=)/i.test(url)) return "fmt";
     return null;
