@@ -1,51 +1,122 @@
 # FMT Video Saver
 
-ページ内の直接動画URL、`fmt` / `format` / `itag` パラメータ付きURL、および HLS (`.m3u8`)、DASH (`.mpd`)、F4M (`.f4m`) のストリームURLを検出して表示する Manifest V3 拡張機能です。
+[![最新リリース](https://img.shields.io/github/v/release/Fortniteleakjp/fmt-video-saver?display_name=tag)](https://github.com/Fortniteleakjp/fmt-video-saver/releases)
 
-HLS/DASH/F4M の「結合保存」には、ローカルのNative Messagingヘルパー経由で `yt-dlp` と `ffmpeg` を使用します。拡張機能だけで動く直接ファイル保存と、ローカルヘルパーが必要なストリーム結合を分離しています。
+ページ内の動画やストリームを検出し、ブラウザから保存できるManifest V3拡張機能です。
+
+YouTubeでは、通信ごとのFMTを大量に表示せず、動画単位で次の保存方法を選択できます。
+
+- 音声のみ（WAV）
+- 映像＋音声のみ（MP4）
+- サムネイルのみ（1080p相当）
+
+HLS / DASH / F4Mの結合、ログイン中のページからのCookie利用、保存状況のプログレスバーにも対応しています。
+
+## 最新リリース
+
+[FMT Video Saver v0.1.0をダウンロード](https://github.com/Fortniteleakjp/fmt-video-saver/releases/tag/v0.1.0)
+
+リリースには、Native Messaging用の [native_helper.exe](https://github.com/Fortniteleakjp/fmt-video-saver/releases/download/v0.1.0/native_helper.exe) を含めています。
+
+## 必要な環境
+
+- Windows 10 / 11
+- Google Chrome または Microsoft Edge
+- Node.js 22以上（YouTubeのチャレンジ解決用）
+- `yt-dlp[default]`
+- `ffmpeg` / `ffprobe`
+
+Python 3.10以上は、リリース済みの `native_helper.exe` を使わず、Nativeヘルパーをソースからビルドする場合に必要です。
 
 ## インストール
 
-1. Chrome または Edge で `chrome://extensions` を開く。
-2. 「デベロッパーモード」を有効にする。
-3. 「パッケージ化されていない拡張機能を読み込む」から、このフォルダ `D:\youtubedl` を選ぶ。
-4. 動画ページを開き、動画を再生して拡張機能のアイコンを押す。
+### 1. 拡張機能を読み込む
 
-## HLS/DASH結合のセットアップ（Windows）
+1. ChromeまたはEdgeで `chrome://extensions` を開きます。
+2. 「デベロッパーモード」を有効にします。
+3. 「パッケージ化されていない拡張機能を読み込む」を選択します。
+4. このリポジトリのフォルダを選択します。
 
-1. `yt-dlp.exe` と `ffmpeg.exe` をインストールし、PATHに追加する。PATHに追加しない場合は、`FMT_VIDEO_SAVER_FFMPEG` 環境変数で `ffmpeg.exe` の場所を指定する。
-2. YouTubeのチャレンジ解決用に、Node.js 22以上をインストールしてPATHに追加する。ヘルパーがNodeの場所を自動検出します。
-3. yt-dlpを更新し、EJSソルバーを追加する。
+### 2. yt-dlpとffmpegを準備する
 
-   ```powershell
-   python -m pip install --upgrade "yt-dlp[default]"
-   ```
+`yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe`、Node.jsをPATHに追加してください。
 
-4. PowerShellでこのフォルダを開き、`build-native-helper.ps1` を実行する。PyInstallerを使ってNative Messaging用の `native_helper.exe` を作成する。
-5. 拡張機能を `chrome://extensions` から読み込み、表示された拡張機能ID（32文字）を確認する。
-6. PowerShellで次を実行する。
+```powershell
+python -m pip install --upgrade "yt-dlp[default]"
+```
 
-   ```powershell
-   .\install-native-host.ps1 -ExtensionId "拡張機能ID"
-   ```
+`yt-dlp[default]` には、YouTubeのチャレンジ解決に必要なEJSソルバーが含まれます。
 
-7. Chrome / Edgeを再起動し、動画ページを再読み込みする。
+### 3. Native Messagingヘルパーを登録する
 
-保存先は既定で `%USERPROFILE%\Downloads` です。変更する場合は、`FMT_VIDEO_SAVER_DOWNLOAD_DIR` 環境変数に保存先を指定してください。
+リリースから `native_helper.exe` をダウンロードしてリポジトリのルートに置くか、ソースからビルドします。
 
-## 対応範囲
+```powershell
+.\build-native-helper.ps1
+```
 
-- MP4 / WebM / MOV / MKV / TS などの直接ファイル: 「保存」でブラウザのダウンロードを開始
-- `.fmt` または `fmt`、`format`、`itag` を含むURL: FMT として表示し、直接ファイルなら保存
-- HLS / DASH / F4M: 「結合保存」でyt-dlp / ffmpegによる取得・結合を開始
-- YouTube: 通信ごとのFMTを大量表示せず、動画ページを1件にまとめて表示し、「音声のみ（WAV）」「映像＋音声のみ（MP4）」「サムネのみ（1080p）」を個別選択
-- YouTube: `maxresdefault.jpg`（フルサイズ・1080p相当）のみをサムネイル候補として表示
-- ログインが必要なページ: 現在のタブに適用されるCookieを一時Netscape形式に変換し、ローカルヘルパーへ渡して取得
+拡張機能ページに表示される拡張機能IDを確認し、次のコマンドを実行します。
 
-DRM保護の解除、ログイン制限の回避、Cookieの外部サーバー送信は実装していません。
-CookieはNativeヘルパーへ渡すため、拡張機能とヘルパーを自分で確認できる環境でのみ使用してください。
-動画の権利とサイト規約も確認してください。
+```powershell
+.\install-native-host.ps1 -ExtensionId "拡張機能ID"
+```
 
-## 補足
+その後、Chrome / Edgeを再起動し、動画ページを再読み込みしてください。
 
-ブラウザ拡張機能は、CORS・Referer・Cookie・DRMなどの制約により、すべてのサイトから動画を取得できるわけではありません。また、サイト側が動画URLを `blob:` や暗号化された再生APIだけで提供する場合も検出できないことがあります。
+## 使い方
+
+1. 動画ページを開きます。
+2. 必要に応じて動画を再生します。
+3. ツールバーの「FMT Video Saver」を開きます。
+4. 保存したい形式のボタンを押します。
+
+保存先は既定で次のフォルダです。
+
+```text
+%USERPROFILE%\Downloads
+```
+
+保存先を変更する場合は、`FMT_VIDEO_SAVER_DOWNLOAD_DIR` 環境変数を設定してください。
+
+## 対応形式
+
+| 種類 | 動作 |
+| --- | --- |
+| MP4 / WebM / MOV / MKV / TSなど | 直接ファイルとして保存 |
+| `.fmt` / `fmt` / `format` / `itag` | FMT候補として表示 |
+| HLS (`.m3u8`) | yt-dlp / ffmpegで取得・結合 |
+| DASH (`.mpd`) | yt-dlp / ffmpegで取得・結合 |
+| F4M (`.f4m`) | Nativeヘルパー経由で取得 |
+| YouTube音声 | WAVとして保存 |
+| YouTube映像＋音声 | MP4として結合・保存 |
+| YouTubeサムネイル | `maxresdefault.jpg`のみ保存 |
+
+## Cookieとセキュリティ
+
+ログインが必要な動画では、現在のタブと動画URLに適用されるCookieを取得し、一時的なNetscape形式ファイルとしてローカルNativeヘルパーへ渡します。Cookieを外部サーバーへ送信する処理はありません。
+
+ただし、この拡張機能はCookieを読み取る権限を持ちます。コードとNativeヘルパーの内容を確認できる環境で使用し、不要になった場合は拡張機能を削除してください。
+
+## 制限事項
+
+- DRM保護の解除には対応していません。
+- ログイン制限、地域制限、アクセス制限の回避は行いません。
+- `blob:` URLや暗号化された再生APIのみを使用するサイトでは検出できない場合があります。
+- サイトのCORS、Referer、Cookie、ネットワーク設定により取得できない場合があります。
+- YouTubeの仕様変更により、yt-dlpやNode.jsの更新が必要になる場合があります。
+
+動画の権利と各サイトの利用規約を確認したうえで使用してください。
+
+## 開発用ファイル
+
+```text
+manifest.json                 拡張機能のManifest V3設定
+background.js                 検出・保存・Native Messaging処理
+content.js                    ページ内メディアとYouTube情報の検出
+popup.html / popup.js         ポップアップUI
+popup.css                    ポップアップのスタイル
+native_helper.py              yt-dlp / ffmpegを呼び出すNativeヘルパー
+native-host-manifest.template.json  Native Messaging設定テンプレート
+```
+
+`build/`、`dist/`、PyInstallerの`.spec`ファイル、ローカル固有のNative host manifestはGit管理対象外です。
