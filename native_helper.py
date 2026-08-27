@@ -17,6 +17,92 @@ import tempfile
 
 HOST_NAME = "com.fmtsaver.helper"
 PROGRESS_RE = re.compile(r"\[download\]\s+(\d+(?:\.\d+)?)%")
+CONFIG_NAME = "local-config.json"
+PARTIAL_SUFFIXES = (".part", ".ytdl", ".temp")
+
+
+def app_dir():
+    """PyInstaller化した場合も含め、ヘルパー本体が置かれたディレクトリを返す。"""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def load_local_config():
+    """ローカル専用設定（Gitに載せない）を読み込む。存在しなければ空設定。"""
+    override = os.environ.get("FMT_VIDEO_SAVER_CONFIG")
+    candidates = [Path(override)] if override else []
+    candidates.append(app_dir() / CONFIG_NAME)
+    for path in candidates:
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                config = json.load(handle)
+            return config if isinstance(config, dict) else {}
+        except (OSError, ValueError):
+            continue
+    return {}
+
+
+def host_of(url):
+    match = re.match(r"https?://([^/?#]+)", str(url), re.IGNORECASE)
+    if not match:
+        return ""
+    return match.group(1).split("@")[-1].split(":")[0].lower()
+
+
+def host_matches(host, pattern, include_subdomains):
+    pattern = str(pattern or "").lower().lstrip(".")
+    if not host or not pattern:
+        return False
+    if host == pattern:
+        return True
+    return bool(include_subdomains) and host.endswith("." + pattern)
+
+
+def extra_headers_for(url, rules):
+    """登録ホストに一致した時だけ追加ヘッダを返す。
+
+    トークンを無関係なCDNへ送らないよう、対象URLのホストで明示的に絞り込む。
+    rules は先頭が優先（拡張が実測したトークン → ローカル設定の順に渡す）。
+    """
+    host = host_of(url)
+    headers = []
+    seen = set()
+    for rule in rules or []:
+        if not isinstance(rule, dict):
+            continue
+        name = re.sub(r"[\r\n:]", "", str(rule.get("header") or "Authorization")).strip()
+        value = re.sub(r"[\r\n]", "", str(rule.get("value") or "")).strip()
+        if not name or not value or name.lower() in seen:
+            continue
+        include_subdomains = rule.get("includeSubdomains", True)
+        if any(host_matches(host, pattern, include_subdomains) for pattern in rule.get("hosts") or []):
+            headers.append((name, value))
+            seen.add(name.lower())
+    return headers
+
+
+def cleanup_partials(download_dir, base_name):
+    """前回失敗の残骸だけを消す。完成済みの動画ファイルには触れない。"""
+    removed = []
+    try:
+        entries = list(download_dir.iterdir())
+    except OSError:
+        return removed
+    for path in entries:
+        name = path.name
+        if not path.is_file() or not name.startswith(base_name + "."):
+            continue
+        tail = name[len(base_name):]
+        is_partial = tail.endswith(PARTIAL_SUFFIXES) or ".part-Frag" in tail
+        if not is_partial:
+            continue
+        try:
+            path.unlink()
+            removed.append(name)
+        except OSError:
+            pass
+    return removed
 
 
 def read_message():
@@ -109,6 +195,9 @@ def download_stream(request, send_progress):
     download_dir.mkdir(parents=True, exist_ok=True)
     base_name = safe_filename(Path(str(request.get("filename", "video"))).stem)
     output_template = str(download_dir / f"{base_name}.%(ext)s")
+    # 拡張がページから実測したトークンを優先し、無ければローカル設定を使う
+    auth_rules = list(request.get("authHeaders") or []) + list(load_local_config().get("authHeaders") or [])
+    cleanup_partials(download_dir, base_name)
     cookie_path = None
     try:
         cookie_path = write_cookie_file(request.get("cookies", []))
@@ -132,6 +221,8 @@ def download_stream(request, send_progress):
                 "--merge-output-format", "mp4",
             ])
         if request.get("mode", "").startswith("youtube"):
+            # nチャレンジ解決にはJSランタイムとEJSソルバースクリプトの両方が必要
+            args.extend(["--remote-components", "ejs:github"])
             node = shutil.which("node.exe") or shutil.which("node")
             if node:
                 args.extend(["--js-runtimes", f"node:{node}"])
@@ -143,6 +234,8 @@ def download_stream(request, send_progress):
             args.extend(["--cookies", cookie_path])
         if request.get("referer", "").startswith(("http://", "https://")):
             args.extend(["--referer", str(request["referer"])])
+        for name, value in extra_headers_for(url, auth_rules):
+            args.extend(["--add-header", f"{name}:{value}"])
         ffmpeg = os.environ.get("FMT_VIDEO_SAVER_FFMPEG") or shutil.which("ffmpeg")
         if ffmpeg:
             args.extend(["--ffmpeg-location", str(Path(ffmpeg).parent)])

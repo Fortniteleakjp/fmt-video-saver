@@ -1,0 +1,10 @@
+{
+  "_comment": "local-config.json としてコピーし、value を自分のトークンに置き換える。hosts に一致したURLにだけヘッダが付く。",
+  "authHeaders": [
+    {
+      "hosts": ["https://"],
+      "includeSubdomains": true,
+      "header": "Authorization",
+      "value": "Bearer "}
+  ]
+}

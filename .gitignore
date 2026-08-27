@@ -3,5 +3,12 @@
 /dist/
 *.spec
 
+# Chromeは "_" 始まりの名前を拒否するため、拡張ディレクトリに残してはいけない
+__pycache__/
+*.pyc
+
 # Machine-specific Native Messaging registration
 /native-host-manifest.json
+
+# ローカル専用のトークン設定
+/local-config.json
