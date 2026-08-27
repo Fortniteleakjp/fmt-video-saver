@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FMT Video Saver",
-  "version": "0.1.0",
+  "version": "1.0",
   "description": "ページ内の動画URLとFMT/ストリーム形式を検出して保存するブラウザ拡張機能",
   "permissions": [
     "downloads",

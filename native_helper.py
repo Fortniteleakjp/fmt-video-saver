@@ -143,6 +143,73 @@ def find_ytdlp():
         return None
 
 
+FFMPEG_HINT = (
+    "ffmpeg が見つかりません。ffmpeg.exe と ffprobe.exe を同じ bin フォルダーに置き、"
+    "そのフォルダーをPATHに追加してください。"
+    "PATHを変更したくない場合は環境変数 FMT_VIDEO_SAVER_FFMPEG にパスを設定します。"
+    "設定後はChromeを再起動してください。"
+)
+
+
+def ffmpeg_search_dirs():
+    """ffmpeg.exe を探すフォルダを優先順に並べる。"""
+    dirs = []
+    override = os.environ.get("FMT_VIDEO_SAVER_FFMPEG")
+    if override:
+        path = Path(override)
+        dirs.append(path if path.is_dir() else path.parent)
+    found = shutil.which("ffmpeg")
+    if found:
+        dirs.append(Path(found).parent)
+    # ヘルパーと同梱した場合
+    dirs.append(app_dir())
+    dirs.append(app_dir() / "bin")
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        # wingetでの導入が一般的なので、PATH未設定でも既定のシムを見に行く
+        dirs.append(Path(local_app_data) / "Microsoft" / "WinGet" / "Links")
+        dirs.append(Path(local_app_data) / "Programs" / "ffmpeg" / "bin")
+    # 公式ビルドのzipを展開しただけでPATHに登録していない場合の定番の置き場所。
+    # フォルダ名に版番号が入る（ffmpeg-8.1.2-essentials_build など）ので固定名では拾えず、
+    # zipによっては同名フォルダが二重になるため入れ子も見る。新しい版を優先したいので降順。
+    roots = [
+        Path.home() / "Downloads",
+        Path.home() / "Desktop",
+        Path("C:/"),
+        Path("C:/Tools"),
+        Path(os.environ.get("ProgramFiles", "C:/Program Files")),
+    ]
+    for root in roots:
+        dirs.append(root / "ffmpeg" / "bin")
+        for pattern in ("ffmpeg-*/bin", "ffmpeg-*/*/bin"):
+            try:
+                dirs.extend(sorted(root.glob(pattern), reverse=True))
+            except OSError:
+                continue
+    return dirs
+
+
+def find_ffmpeg():
+    """ffmpeg.exe があるフォルダを返す。
+
+    yt-dlp の --ffmpeg-location はフォルダを渡すとその中の ffmpeg/ffprobe を使うため、
+    exe ではなくフォルダを返す。環境変数はexe・フォルダのどちらで指定されても受ける。
+    """
+    ffmpeg_only = None
+    for directory in ffmpeg_search_dirs():
+        try:
+            if not ((directory / "ffmpeg.exe").exists() or (directory / "ffmpeg").exists()):
+                continue
+            # yt-dlpは指定フォルダからffprobeも探すので、両方そろった場所を優先する
+            if (directory / "ffprobe.exe").exists() or (directory / "ffprobe").exists():
+                return directory
+            if ffmpeg_only is None:
+                ffmpeg_only = directory
+        except OSError:
+            continue
+    return ffmpeg_only
+
+
 def safe_filename(value):
     value = str(value or "video")
     value = "".join("_" if char in '<>:/\\|?*"' or ord(char) < 32 else char for char in value)
@@ -198,6 +265,7 @@ def download_stream(request, send_progress):
     # 拡張がページから実測したトークンを優先し、無ければローカル設定を使う
     auth_rules = list(request.get("authHeaders") or []) + list(load_local_config().get("authHeaders") or [])
     cleanup_partials(download_dir, base_name)
+    ffmpeg_dir = find_ffmpeg()
     cookie_path = None
     try:
         cookie_path = write_cookie_file(request.get("cookies", []))
@@ -209,6 +277,9 @@ def download_stream(request, send_progress):
             output_template,
         ]
         if request.get("mode") == "youtube-audio":
+            # 音声抽出はffmpeg必須。数MB落としてから失敗させず、先に弾く
+            if not ffmpeg_dir:
+                return {"ok": False, "error": FFMPEG_HINT}
             args.extend([
                 "--format", "bestaudio/best",
                 "--extract-audio",
@@ -236,9 +307,8 @@ def download_stream(request, send_progress):
             args.extend(["--referer", str(request["referer"])])
         for name, value in extra_headers_for(url, auth_rules):
             args.extend(["--add-header", f"{name}:{value}"])
-        ffmpeg = os.environ.get("FMT_VIDEO_SAVER_FFMPEG") or shutil.which("ffmpeg")
-        if ffmpeg:
-            args.extend(["--ffmpeg-location", str(Path(ffmpeg).parent)])
+        if ffmpeg_dir:
+            args.extend(["--ffmpeg-location", str(ffmpeg_dir)])
         args.append(url)
 
         process = subprocess.Popen(
@@ -265,7 +335,10 @@ def download_stream(request, send_progress):
         return_code = process.wait()
         output = "\n".join(output_lines)
         if return_code != 0:
-            return {"ok": False, "error": output[-4000:] or "yt-dlpの処理に失敗しました。"}
+            error = output[-4000:] or "yt-dlpの処理に失敗しました。"
+            if "ffmpeg not found" in output or "ffprobe and ffmpeg" in output:
+                error = f"{FFMPEG_HINT}\n\n{error}"
+            return {"ok": False, "error": error}
 
         produced = []
         for path in download_dir.glob(f"{base_name}.*"):

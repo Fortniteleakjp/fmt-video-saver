@@ -36,10 +36,18 @@
     add(list, location.href, { kind: "youtube", quality: "動画 + 音声を結合" });
   }
 
+  // SVGの<a>やanimate要素の href/src は SVGAnimatedString で文字列ではない。
+  // 文字列に正規化できないものは候補として扱わない。
+  function urlString(value) {
+    if (typeof value === "string") return value;
+    return typeof value?.baseVal === "string" ? value.baseVal : "";
+  }
+
   function add(list, url, extra = {}) {
-    if (!url || url.startsWith("blob:") || url.startsWith("data:") || url.startsWith("javascript:")) return;
+    const raw = urlString(url);
+    if (!raw || raw.startsWith("blob:") || raw.startsWith("data:") || raw.startsWith("javascript:")) return;
     let absolute;
-    try { absolute = new URL(url, location.href).href; } catch { return; }
+    try { absolute = new URL(raw, location.href).href; } catch { return; }
     const kind = extra.kind || kindFor(absolute);
     if (!kind || seen.has(absolute)) return;
     seen.add(absolute);
